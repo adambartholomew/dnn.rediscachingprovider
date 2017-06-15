@@ -9,6 +9,8 @@ using System.Runtime.Serialization.Formatters.Binary;
 using DotNetNuke.Common.Utilities;
 using System.Configuration;
 using DotNetNuke.Instrumentation;
+using Polenter.Serialization;
+using Polenter.Serialization.Core;
 using StackExchange.Redis;
 
 
@@ -44,18 +46,41 @@ namespace DotNetNuke.Providers.RedisCachingProvider
 
         internal static string Serialize(object source)
         {
-            IFormatter formatter = new BinaryFormatter();
-            var stream = new MemoryStream();
-            formatter.Serialize(stream, source);
+            MemoryStream stream;
+            try
+            {
+                stream = new MemoryStream();
+                IFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, source);
+            }
+            catch (SerializationException ex)
+            {
+                stream = new MemoryStream();
+                var serializer =
+                    new SharpSerializer(new SharpSerializerBinarySettings(BinarySerializationMode.SizeOptimized));
+                serializer.Serialize(source, stream);
+            }
+
             return Convert.ToBase64String(stream.ToArray());
         }
 
         internal static T Deserialize<T>(string base64String)
         {
-            var stream = new MemoryStream(Convert.FromBase64String(base64String));
-            IFormatter formatter = new BinaryFormatter();
-            stream.Position = 0;
-            return (T)formatter.Deserialize(stream);
+            MemoryStream stream;
+            try
+            {
+                stream = new MemoryStream(Convert.FromBase64String(base64String));
+                IFormatter formatter = new BinaryFormatter();
+                stream.Position = 0;
+                return (T) formatter.Deserialize(stream);
+            }
+            catch (SerializationException ex)
+            {
+                stream = new MemoryStream(Convert.FromBase64String(base64String));
+                var serializer = new SharpSerializer(new SharpSerializerBinarySettings(BinarySerializationMode.SizeOptimized));
+                stream.Position = 0;
+                return (T)serializer.Deserialize(stream);
+            }
         }
 
         internal static byte[] SerializeXmlBinary(object obj)
