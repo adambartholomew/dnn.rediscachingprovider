@@ -249,7 +249,7 @@ namespace DotNetNuke.Providers.RedisCachingProvider
                 if (notifyRedis) // Avoid recursive calls
                 {
                     Shared.Logger.Info($"{InstanceUniqueId} - Clearing Redis output cache...");
-                    Shared.ClearRedisCache(RedisCache, $"{KeyPrefix}{CachePrefix}*");
+                    Shared.ClearRedisCache(Connection, RedisCache, $"{KeyPrefix}{CachePrefix}*");
                     Shared.Logger.Info($"{InstanceUniqueId} - Notifying output cache clearing to other partners...");
                     // Notify the channel
                     RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Output.Clear", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}:{portalId}");
@@ -286,7 +286,7 @@ namespace DotNetNuke.Providers.RedisCachingProvider
                 if (notifyRedis) // Avoid recursive calls
                 {
                     Shared.Logger.Info($"{InstanceUniqueId} - Removing Redis output cache: {tabId}...");
-                    Shared.ClearRedisCache(RedisCache, $"{KeyPrefix}{CachePrefix}{tabId}_*");
+                    Shared.ClearRedisCache(Connection, RedisCache, $"{KeyPrefix}{CachePrefix}{tabId}_*");
                     Shared.Logger.Info($"{InstanceUniqueId} - Notifying output cache removal to other partners: {tabId}...");
                     // Notify the channel
                     RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Output.Remove", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}:{tabId}");

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Web;
 using System.Web.Caching;
 using DotNetNuke.Services.Cache;
@@ -200,11 +202,11 @@ namespace DotNetNuke.Providers.RedisCachingProvider
 
 				if (notifyRedis) // Avoid recursive calls
 				{
-                    Shared.Logger.Info($"{InstanceUniqueId} - Clearing Redis cache...");				
-                    Shared.ClearRedisCache(RedisCache, $"{KeyPrefix}*");
+                    Shared.Logger.Info($"{InstanceUniqueId} - Clearing Redis cache...");                  			
+                    Shared.ClearRedisCache(Connection, RedisCache, $"{KeyPrefix}*");
                     Shared.Logger.Info($"{InstanceUniqueId} - Notifying cache clearing to other partners...");
 					// Notify the channel
-                    RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Clear", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}:{type}:{data}");
+                    RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Clear", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}:{type}:{data}", CommandFlags.HighPriority);
                 }
 			}
 			catch (Exception e)
@@ -234,7 +236,7 @@ namespace DotNetNuke.Providers.RedisCachingProvider
 
                     Shared.Logger.Info($"{InstanceUniqueId} - Telling other partners to remove cache key {key}...");                    
 					// Notify the channel
-					RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Remove", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}_{key}");
+					RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Remove", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}_{key}", CommandFlags.HighPriority);
 				}
 			}
 			catch (Exception e)

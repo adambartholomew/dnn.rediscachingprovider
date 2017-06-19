@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.IO.Compression;
@@ -10,9 +11,7 @@ using DotNetNuke.Common.Utilities;
 using System.Configuration;
 using DotNetNuke.Instrumentation;
 using Polenter.Serialization;
-using Polenter.Serialization.Core;
 using StackExchange.Redis;
-
 
 namespace DotNetNuke.Providers.RedisCachingProvider
 {
@@ -137,10 +136,21 @@ namespace DotNetNuke.Providers.RedisCachingProvider
             return DeSerializeXmlBinary(outb);
         }
 
-        internal static void ClearRedisCache(IDatabase redisCache, string cacheKeyPattern)
+        internal static void ClearRedisCache(ConnectionMultiplexer connection, IDatabase redisCache, string cacheKeyPattern)
         {
-            var script = "for _,k in ipairs(redis.call('keys', ARGV[1])) do redis.call('del', k) end";
-            redisCache.ScriptEvaluate(script, null, new RedisValue[] { cacheKeyPattern });
+            foreach (var endpoint in connection.GetEndPoints())
+            {
+                var server = connection.GetServer(endpoint);
+                var keys = server.Keys(pattern: cacheKeyPattern);
+                foreach (var key in keys)
+                {
+                    redisCache.KeyDelete(key);
+                }
+            }
+
+            //Does not work in clusters due to KEYS being server specific
+            //var script = "for _,k in ipairs(redis.call('keys', ARGV[1])) do redis.call('del', k) end";
+            //redisCache.ScriptEvaluate(script, null, new RedisValue[] { cacheKeyPattern });
         }
 
         internal static bool ProcessException(string providerName, Exception e, string key = "", object value = null)
