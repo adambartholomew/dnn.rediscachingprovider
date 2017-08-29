@@ -99,6 +99,17 @@ namespace DotNetNuke.Providers.RedisCachingProvider
             }
         }
 
+	    private static string GetKeyPattern(string type, string data)
+	    {
+	        if (type == "Prefix")
+	        {
+	            return KeyPrefix + data + "*";
+	        }
+	        // TODO: Other types
+
+	        return KeyPrefix + "*";
+	    }
+
         #endregion
 
         #region Abstract implementation
@@ -201,7 +212,7 @@ namespace DotNetNuke.Providers.RedisCachingProvider
 				if (notifyRedis) // Avoid recursive calls
 				{
                     Shared.Logger.Info($"{InstanceUniqueId} - Clearing Redis cache...");				
-                    Shared.ClearRedisCache(RedisCache, $"{KeyPrefix}*");
+                    Shared.ClearRedisCache(RedisCache, GetKeyPattern(type, data));
                     Shared.Logger.Info($"{InstanceUniqueId} - Notifying cache clearing to other partners...");
 					// Notify the channel
                     RedisCache.Publish(new RedisChannel(KeyPrefix + "Redis.Clear", RedisChannel.PatternMode.Auto), $"{InstanceUniqueId}:{type}:{data}");
