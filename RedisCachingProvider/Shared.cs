@@ -141,16 +141,9 @@ namespace DotNetNuke.Providers.RedisCachingProvider
             foreach (var endpoint in connection.GetEndPoints())
             {
                 var server = connection.GetServer(endpoint);
-                var keys = server.Keys(pattern: cacheKeyPattern);
-                foreach (var key in keys)
-                {
-                    redisCache.KeyDelete(key);
-                }
+                var script = "for _,k in ipairs(redis.call('keys', ARGV[1])) do redis.call('del', k) end";
+                server.Multiplexer.GetDatabase().ScriptEvaluate(script, null, new RedisValue[] { cacheKeyPattern });
             }
-
-            //Does not work in clusters due to KEYS being server specific
-            //var script = "for _,k in ipairs(redis.call('keys', ARGV[1])) do redis.call('del', k) end";
-            //redisCache.ScriptEvaluate(script, null, new RedisValue[] { cacheKeyPattern });
         }
 
         internal static bool ProcessException(string providerName, Exception e, string key = "", object value = null)
